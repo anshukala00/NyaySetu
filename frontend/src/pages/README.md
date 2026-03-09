@@ -1,0 +1,3 @@
+# Pages
+
+This directory contains page-level components for routing.

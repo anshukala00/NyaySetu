@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nyaysetu Frontend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #4338CA;
+        }
+        .output {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            background: #fee;
+            color: #c00;
+        }
+        .success {
+            background: #efe;
+            color: #060;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nyaysetu Frontend API Test</h1>
+    
+    <div class="section">
+        <h2>1. Test Login (Citizen)</h2>
+        <button onclick="testCitizenLogin()">Login as Citizen</button>
+        <div id="login-output" class="output"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. Test Fetch Cases</h2>
+        <button onclick="testFetchCases()">Fetch Cases</button>
+        <div id="cases-output" class="output"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. Test Login (Judge)</h2>
+        <button onclick="testJudgeLogin()">Login as Judge</button>
+        <div id="judge-login-output" class="output"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. Test Fetch Cases (Judge)</h2>
+        <button onclick="testFetchCasesJudge()">Fetch Cases as Judge</button>
+        <div id="judge-cases-output" class="output"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        let citizenToken = '';
+        let judgeToken = '';
+        
+        async function testCitizenLogin() {
+            const output = document.getElementById('login-output');
+            output.textContent = 'Logging in...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'citizen1@example.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    citizenToken = data.access_token;
+                    output.className = 'output success';
+                    output.textContent = `✓ Login successful!\nUser ID: ${data.user_id}\nRole: ${data.role}\nToken: ${citizenToken.substring(0, 50)}...`;
+                    
+                    // Store in localStorage like the app does
+                    localStorage.setItem('access_token', citizenToken);
+                    localStorage.setItem('user_id', data.user_id);
+                    localStorage.setItem('user_role', data.role);
+                } else {
+                    output.className = 'output error';
+                    output.textContent = `✗ Login failed: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `✗ Error: ${error.message}`;
+            }
+        }
+        
+        async function testFetchCases() {
+            const output = document.getElementById('cases-output');
+            
+            if (!citizenToken) {
+                output.className = 'output error';
+                output.textContent = '✗ Please login first!';
+                return;
+            }
+            
+            output.textContent = 'Fetching cases...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/cases`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${citizenToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    output.className = 'output success';
+                    output.textContent = `✓ Cases fetched successfully!\n\nResponse structure:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    output.className = 'output error';
+                    output.textContent = `✗ Fetch failed: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `✗ Error: ${error.message}`;
+            }
+        }
+        
+        async function testJudgeLogin() {
+            const output = document.getElementById('judge-login-output');
+            output.textContent = 'Logging in...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'judge1@example.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    judgeToken = data.access_token;
+                    output.className = 'output success';
+                    output.textContent = `✓ Login successful!\nUser ID: ${data.user_id}\nRole: ${data.role}\nToken: ${judgeToken.substring(0, 50)}...`;
+                } else {
+                    output.className = 'output error';
+                    output.textContent = `✗ Login failed: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `✗ Error: ${error.message}`;
+            }
+        }
+        
+        async function testFetchCasesJudge() {
+            const output = document.getElementById('judge-cases-output');
+            
+            if (!judgeToken) {
+                output.className = 'output error';
+                output.textContent = '✗ Please login as judge first!';
+                return;
+            }
+            
+            output.textContent = 'Fetching cases...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/cases`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${judgeToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    output.className = 'output success';
+                    output.textContent = `✓ Cases fetched successfully!\n\nTotal: ${data.total}\nCases: ${data.cases.length}\n\nFirst case:\n${JSON.stringify(data.cases[0], null, 2)}`;
+                } else {
+                    output.className = 'output error';
+                    output.textContent = `✗ Fetch failed: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `✗ Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
